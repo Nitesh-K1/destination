@@ -5,9 +5,11 @@ type Props = {
   canRecalc: boolean;
   onRecalc: () => void;
   onClear: () => void;
+  onEnableLocation?: () => void;
+  locationEnabled?: boolean;
 };
 
-export default function Controls({ profile, setProfile, canRecalc, onRecalc, onClear }: Props) {
+export default function Controls({ profile, setProfile, canRecalc, onRecalc, onClear, onEnableLocation, locationEnabled }: Props) {
   return (
     <div className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur rounded shadow px-3 py-2 space-y-2">
       <div className="text-sm font-medium">Routing</div>
@@ -38,6 +40,14 @@ export default function Controls({ profile, setProfile, canRecalc, onRecalc, onC
         >
           Clear
         </button>
+        {onEnableLocation && !locationEnabled && (
+          <button
+            className="text-xs bg-emerald-600 text-white rounded px-2 py-1"
+            onClick={onEnableLocation}
+          >
+            Enable Location
+          </button>
+        )}
       </div>
     </div>
   );
