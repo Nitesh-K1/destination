@@ -13,6 +13,7 @@ import LineString from 'ol/geom/LineString';
 import { Stroke, Style, Circle as CircleStyle, Fill } from 'ol/style';
 import Controls from './Controls';
 import { useGeolocationManual } from '../hooks/useGeolocation';
+import InfoPanel from './InfoPanel';
 import { fetchRoutesOSRM, type Profile, type RouteFeature } from '../utils/routing';
 
 export default function OlMapView() {
@@ -21,7 +22,7 @@ export default function OlMapView() {
   const [profile, setProfile] = useState<Profile>('driving');
   const { position: userPos, start: startGeo, started } = useGeolocationManual();
   const [destPos, setDestPos] = useState<{ lng: number; lat: number } | null>(null);
-
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
   const routesSource = useMemo(() => new VectorSource(), []);
   const bestSource = useMemo(() => new VectorSource(), []);
   const markersSource = useMemo(() => new VectorSource(), []);
@@ -89,8 +90,6 @@ export default function OlMapView() {
       mapRef.current = null;
     };
   }, [routesLayer, bestLayer, markersLayer, userPos]);
-
-  // Update user marker
   useEffect(() => {
     if (!mapRef.current || !userPos) return;
     let userFeature = markersSource.getFeatures().find(f => f.get('kind') === 'user');
@@ -102,8 +101,6 @@ export default function OlMapView() {
       (userFeature.getGeometry() as Point).setCoordinates(fromLonLat([userPos.lng, userPos.lat]));
     }
   }, [userPos, markersSource]);
-
-  // Update destination marker
   useEffect(() => {
     if (!mapRef.current || !destPos) return;
     let destFeature = markersSource.getFeatures().find(f => f.get('kind') === 'dest');
@@ -119,11 +116,11 @@ export default function OlMapView() {
   const clearRoutes = useCallback(() => {
     routesSource.clear();
     bestSource.clear();
+    setRouteInfo(null);
   }, [routesSource, bestSource]);
 
   const drawRoutes = useCallback((features: RouteFeature[]) => {
     clearRoutes();
-    // Convert GeoJSON LineStrings to OL Features
     const olFeatures = features.map((feat) => {
       const coords = (feat.geometry.coordinates as number[][]).map(([lng, lat]) => fromLonLat([lng, lat]));
       const line = new LineString(coords);
@@ -131,11 +128,8 @@ export default function OlMapView() {
       f.setProperties(feat.properties);
       return f;
     });
-
-    // Add all alternatives to routes layer
     routesSource.addFeatures(olFeatures);
 
-    // Pick best by shortest duration
     const best = features.slice().sort((a, b) => a.properties.duration - b.properties.duration)[0];
     if (best) {
       const bestCoords = (best.geometry.coordinates as number[][]).map(([lng, lat]) => fromLonLat([lng, lat]));
@@ -144,9 +138,17 @@ export default function OlMapView() {
       bestFeature.setProperties(best.properties);
       bestSource.addFeature(bestFeature);
 
-      // Fit view to route
+      // NEW: Set route info (format km and min)
+      setRouteInfo({
+        distance: Math.round(best.properties.distance / 1000 * 10) / 10,  // meters → km, 1 decimal
+        duration: Math.round(best.properties.duration / 60),  // seconds → minutes, whole
+      });
+
       const view = mapRef.current!.getView();
       view.fit(bestLine.getExtent(), { padding: [40, 40, 40, 40], duration: 300 });
+    } else {
+      // NEW: Clear info if no best route
+      setRouteInfo(null);
     }
   }, [routesSource, bestSource, clearRoutes]);
 
@@ -156,7 +158,6 @@ export default function OlMapView() {
     if (feats.length) drawRoutes(feats);
   }, [userPos, destPos, profile, drawRoutes]);
 
-  // Auto recalc when inputs change
   useEffect(() => { recalc(); }, [recalc]);
 
   return (
@@ -170,13 +171,14 @@ export default function OlMapView() {
         onClear={() => {
           setDestPos(null);
           clearRoutes();
-          // remove destination marker
+
           const dest = markersSource.getFeatures().find(f => f.get('kind') === 'dest');
           if (dest) markersSource.removeFeature(dest);
         }}
         onEnableLocation={() => { startGeo(); }}
         locationEnabled={started}
       />
+      <InfoPanel routeInfo={routeInfo} />
     </div>
   );
 }
