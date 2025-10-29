@@ -27,7 +27,7 @@ export default function Map() {
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: '/src/assets/empty_style.json',
+      style: '/src/assets/bright.json',
       center: userPos ? [userPos.lng, userPos.lat] : defaultCenter,
       zoom: zoom
     })

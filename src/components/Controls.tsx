@@ -1,4 +1,3 @@
-
 type Props = {
   profile: 'driving' | 'walking' | 'cycling';
   setProfile: (p: 'driving' | 'walking' | 'cycling') => void;

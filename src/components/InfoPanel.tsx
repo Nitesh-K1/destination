@@ -1,5 +1,3 @@
-import { type ReactNode } from 'react';
-
 type RouteInfo = { distance: number; duration: number } | null;
 
 export default function InfoPanel({ routeInfo }: { routeInfo: RouteInfo }) {

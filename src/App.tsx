@@ -1,5 +1,5 @@
 import MapView from './components/MapView'
-import OLMapView from './components/OlMapView'
+// import OLMapView from './components/OlMapView'
 
 export default function App() {
   return (
@@ -9,7 +9,7 @@ export default function App() {
       </header>
       <main className="flex-1 relative">
         <MapView />
-        <OLMapView />
+        {/* <OLMapView /> */}
       </main>
     </div>
   )
